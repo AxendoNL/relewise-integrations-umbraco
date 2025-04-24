@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Lucene.Net.Facet;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -52,7 +53,9 @@ public static class CatalogApi
         [FromQuery] string? productId,
         [FromQuery] string? country)
     {
-        ISearcher searcher = context.RequestServices.GetRequiredService<ISearcher>();
+        ISearcher searcher = new Searcher(new Guid("ec54831b-6ee1-48c4-a51b-6f56f62b02d0"), "goakQgVQcenqIl");
+        searcher.ServerUrl = "https://sandbox-api.relewise.com/";
+
         IRelewiseUserLocator userLocator = context.RequestServices.GetRequiredService<IRelewiseUserLocator>();
         User user = await userLocator.GetUser();
 
@@ -92,14 +95,14 @@ public static class CatalogApi
         }
 
         ProductSearchResponse result = await searcher.SearchAsync(request, context.RequestAborted);
-
+        var facets = new
+        {
+            Category = result.Facets.Category(CategorySelectionStrategy.ImmediateParent).Available.Select(x => new FacetValue(x.Value.Id, x.Value.DisplayName, x.Hits, x.Selected)),
+            //Country = result.Facets.DataString(DataSelectionStrategy.Product, "Country").Available.Select(x => new FacetValue(x.Value, x.Value, x.Hits, x.Selected))
+        };
         await context.Response.WriteAsJsonAsync(new
         {
-            Facets = new
-            {
-                Category = result.Facets.Category(CategorySelectionStrategy.ImmediateParent).Available.Select(x => new FacetValue(x.Value.Id, x.Value.DisplayName, x.Hits, x.Selected)),
-                Country = result.Facets.DataString(DataSelectionStrategy.Product, "Country").Available.Select(x => new FacetValue(x.Value, x.Value, x.Hits, x.Selected))
-            },
+            Facets = facets,
             result.Results,
             result.Hits
         }, JsonSerializerOptions, context.RequestAborted);

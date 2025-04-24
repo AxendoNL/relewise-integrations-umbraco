@@ -106,7 +106,7 @@ namespace Relewise.UmbracoV10
                     u.UseBackOffice();
                     u.UseWebsite();
                     // Enables tracking of all page-views to Relewise
-                    u.TrackContentViews();
+                    //u.TrackContentViews();
                 })
                 .WithEndpoints(u =>
                 {
